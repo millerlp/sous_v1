@@ -28,7 +28,7 @@ unsigned long windowStartTime;
 
 #define button1 A4 //analog 4, used as digital in for button input
 #define ssrPin A5 //analog 5, used as digital out for SSR
-
+#define lcdDelay 5 // millisecond delay for LCD updating
 volatile int lowTemp = 130; //initial lowTemp limit for heating element control
 volatile int highTemp = 132; //initial highTemp limit for heating element control
 volatile boolean pwrState = false; //initial power on state
@@ -53,6 +53,7 @@ float averages[chs]; //array of averages, one value per channel
 //-------------------------------------------
 unsigned long loopTime ;  // timer for display updates
 unsigned long loopTime2 ; // timer for PID loop
+unsigned long loopTime3 ; // timer for set display
 //**************************************************************************
 //**************************************************************************
 void setup()
@@ -68,7 +69,7 @@ void setup()
   lcd.clear();
 
   lowTemp = lowTempFunc(); //call lowTempFunc sub-function and return value
- 
+
   //-------------------------
   // PID initialization
   Setpoint = lowTemp;
@@ -86,6 +87,7 @@ void setup()
   lcd.clear();
   loopTime = millis();
   loopTime2 = millis();
+  loopTime3 = millis();
 } //end of setup loop, move on to main loop()
 
 void loop() {
@@ -142,12 +144,12 @@ void loop() {
     }
     if( Output < (millis() - windowStartTime) ) {
       digitalWrite(ssrPin,HIGH);
-//      digitalWrite(led,HIGH);
+      //      digitalWrite(led,HIGH);
       pwrState = true;
     }
     else {
       digitalWrite(ssrPin,LOW);
-//      digitalWrite(led,LOW);
+      //      digitalWrite(led,LOW);
       pwrState = false;
     } 
   }
@@ -173,24 +175,32 @@ void loop() {
   if (millis() - loopTime > 1000) {
     loopTime = millis();
     lcd.home();
-    lcd.print("H20:");
-    delay(10);
-    if (int(averages[0]) < lowlim) {
-      lcd.print("NA "); 
+    // Every 10 seconds, show the set temperature
+    if (millis() - loopTime3 > 10000) {
+      loopTime3 = millis();
+      lcd.print("SET:");
+      lcd.print(lowTemp); // show temperature target
+      delay(lcdDelay);
     } 
-    else if (int(averages[0]) > lowlim & int(averages[0]) < 100) {
-      lcd.print(" "); //pad with a space
-      lcd.print(int(averages[0]));
-    } 
-    else {
-      lcd.print(int(averages[0]));
+    else {  // or else display the measured temperature
+      lcd.print("H20:");
+      if (int(averages[0]) < lowlim) {
+        lcd.print("NA "); // bogus temperature data
+      } 
+      else if (int(averages[0]) > lowlim & int(averages[0]) < 100) {
+        lcd.print(" "); //pad with a space
+        lcd.print(int(averages[0])); // print 2-digit temperature
+      } 
+      else {
+        lcd.print(int(averages[0])); // print 3-digit temperature
+      }
     }
     lcd.print("F "); 
-    delay(10);
+    delay(lcdDelay);
     ///////////////////////////
     lcd.setCursor(9,0);
     lcd.print("1:");
-    delay(10);
+    delay(lcdDelay);
     if (int(averages[1]) < lowlim) {
       lcd.print("NA ");
     } 
@@ -202,11 +212,11 @@ void loop() {
       lcd.print(int(averages[1]));
     }
     lcd.print("F");
-    delay(10);
+    delay(lcdDelay);
     ///////////////////////
     lcd.setCursor(0,1); //start of 2nd row
     lcd.print("  2:");
-    delay(10);
+    delay(lcdDelay);
     if (int(averages[2]) < lowlim) {
       lcd.print("NA "); 
     } 
@@ -217,10 +227,10 @@ void loop() {
     else {
       lcd.print(int(averages[2]));
     }
-    delay(10);
+    delay(lcdDelay);
     /////////////////////// 
     lcd.setCursor(7,1);
-    delay(10);
+    delay(lcdDelay);
     lcd.print("F 3:");
     if (int(averages[3]) < lowlim) {
       lcd.print("NA "); 
@@ -232,9 +242,9 @@ void loop() {
     else {
       lcd.print(int(averages[3]));
     }
-    delay(10);
+    delay(lcdDelay);
     lcd.print("F");
-    delay(10);
+    delay(lcdDelay);
     lcd.setCursor(15,1);
     if (pwrState) { //if pwrState is true
       lcd.print("x");
@@ -244,7 +254,7 @@ void loop() {
     }
 
 
-  }  
+  }  // end of LCD display if-statements
 
 
 } //end of main loop
@@ -360,5 +370,6 @@ int lowTempFunc() { //lowTempFunc will return an integer when called
 //  }
 //  return highTemp;
 //}
+
 
 
