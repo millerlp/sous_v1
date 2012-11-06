@@ -51,7 +51,8 @@ int index = 0; //index value to iterate through in main loop
 long total[chs]; //array of totals, one value per channel
 float averages[chs]; //array of averages, one value per channel
 //-------------------------------------------
-
+unsigned long loopTime ;  // timer for display updates
+unsigned long loopTime2 ; // timer for PID loop
 //**************************************************************************
 //**************************************************************************
 void setup()
@@ -83,12 +84,12 @@ void setup()
     }
   }
   lcd.clear();
-
+  loopTime = millis();
+  loopTime2 = millis();
 } //end of setup loop, move on to main loop()
 
 void loop() {
-  unsigned long loopTime = millis();  // timer for display updates
-  unsigned long loopTime2 = millis(); // timer for PID loop
+
   //**************************************************************************
   //Start by reading temperature values on each analog input
   //first remove the old value in this row of tempInArray from the running total
@@ -170,8 +171,9 @@ void loop() {
   //The various delays in here seem to be necessary for keeping output
   //properly formatted when hooked up to the electrically noisy smoker
   if (millis() - loopTime > 1000) {
+    loopTime = millis();
     lcd.home();
-    lcd.print("Air:");
+    lcd.print("H20:");
     delay(10);
     if (int(averages[0]) < lowlim) {
       lcd.print("NA "); 
